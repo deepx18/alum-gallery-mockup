@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>harness2</title>
+</head>
+<body>
+  <script>
+    // Screenshot-only renderer: writes the mockup straight into this document so
+    // every section sits inside the initial viewport (headless paints reliably then).
+    fetch("../index.html")
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var ready = Promise.all(Array.prototype.slice.call(
+          html.match(/https:\/\/images\.unsplash\.com[^"]+/g) || []
+        ).map(function (u) {
+          return new Promise(function (resolve) {
+            var img = new Image();
+            img.onload = img.onerror = function () { resolve(); };
+            img.src = u;
+          });
+        }));
+        document.open();
+        document.write(html.replace("<head>", '<head><base href="../">').replace(/ loading="lazy"/g, ""));
+        document.close();
+        return ready;
+      })
+      .then(function () {
+        var override = document.createElement("style");
+        override.textContent =
+          ".hero{min-height:900px!important}" +
+          ".js .reveal{opacity:1!important;transform:none!important;transition:none!important}" +
+          "html{scroll-behavior:auto!important}";
+        document.head.appendChild(override);
+      });
+  </script>
+</body>
+</html>

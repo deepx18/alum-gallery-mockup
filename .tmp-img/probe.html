@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>probe</title>
+<style>html,body{margin:0}iframe{width:1440px;height:900px;border:0;display:block}#meta{position:absolute;left:-9999px}</style>
+</head>
+<body>
+<pre id="meta">pending</pre>
+<iframe id="frame" src="../index.html"></iframe>
+<script>
+  var frame = document.getElementById("frame");
+  frame.addEventListener("load", function () {
+    var doc = frame.contentDocument;
+    doc.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
+    var out = [];
+    [".hero", ".services", ".service-grid", ".service-card", ".about", ".projects", ".project-grid", ".project-card", ".process", ".cta", ".site-footer"].forEach(function (sel) {
+      var el = doc.querySelector(sel);
+      if (!el) { out.push(sel + " MISSING"); return; }
+      var r = el.getBoundingClientRect();
+      out.push(sel + " top=" + Math.round(r.top + frame.contentWindow.scrollY) + " h=" + Math.round(r.height) + " w=" + Math.round(r.width));
+    });
+    doc.querySelectorAll(".service-card").forEach(function (card, i) {
+      var img = card.querySelector("img");
+      out.push("card" + i + " img complete=" + (img ? img.complete : "n/a") + " natH=" + (img && img.naturalHeight) + " opacity=" + frame.contentWindow.getComputedStyle(card).opacity);
+    });
+    document.getElementById("meta").textContent = "PROBE|" + out.join("|");
+  });
+</script>
+</body>
+</html>

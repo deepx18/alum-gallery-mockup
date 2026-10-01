@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>probe3</title>
+<style>html,body{margin:0}iframe{width:390px;height:844px;border:0;display:block}#meta{position:absolute;left:-9999px;width:900px;font:11px monospace}</style>
+</head>
+<body>
+<pre id="meta">pending</pre>
+<iframe id="frame" src="../index.html"></iframe>
+<script>
+  var frame = document.getElementById("frame");
+  frame.addEventListener("load", function () {
+    setTimeout(function () {
+      var doc = frame.contentDocument;
+      var win = frame.contentWindow;
+      // Recreate the no-JS class state on an otherwise normal load.
+      doc.documentElement.className = "no-js";
+      var out = ["scrollWidth=" + doc.documentElement.scrollWidth + " innerWidth=" + win.innerWidth];
+      var all = doc.querySelectorAll("body *");
+      var offenders = [];
+      Array.prototype.forEach.call(all, function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.width > win.innerWidth + 1 || r.right > win.innerWidth + 1) {
+          offenders.push((el.tagName + "." + (el.className || "")).slice(0, 46) +
+            " w=" + Math.round(r.width) + " right=" + Math.round(r.right));
+        }
+      });
+      out.push("offenders=" + offenders.length);
+      out = out.concat(offenders.slice(0, 12));
+      var nav = doc.querySelector(".primary-nav");
+      out.push("navDisplay=" + win.getComputedStyle(nav).display + " navW=" + Math.round(nav.getBoundingClientRect().width) +
+        " navTop=" + Math.round(nav.getBoundingClientRect().top));
+      document.getElementById("meta").textContent = "PROBE3|" + out.join("|");
+    }, 400);
+  });
+</script>
+</body>
+</html>

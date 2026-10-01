@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>harness</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #fff; }
+    iframe { display: block; border: 0; }
+    #meta { position: absolute; left: -9999px; font: 12px monospace; }
+  </style>
+</head>
+<body>
+  <div id="meta">pending</div>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var w = parseInt(params.get("w") || "1440", 10);
+    var h = parseInt(params.get("h") || "900", 10);
+    var y = parseInt(params.get("y") || "0", 10);
+    var baseHref = new URL("../", location.href).href;
+
+    function ready(doc, cb) {
+      var tries = 0;
+      (function check() {
+        var imgs = Array.prototype.slice.call(doc.images);
+        var done = imgs.length > 0 && imgs.every(function (i) { return i.complete && i.naturalWidth > 0; });
+        if (done || tries++ > 600) return cb();
+        setTimeout(check, 50);
+      })();
+    }
+
+    fetch("../index.html")
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var urls = [];
+        html.replace(/src="(https:\/\/images\.unsplash\.com[^"]+)"/g, function (_, u) { urls.push(u); return _; });
+        return Promise.all(urls.map(function (u) {
+          return new Promise(function (resolve) {
+            var img = new Image();
+            img.onload = img.onerror = function () { resolve(); };
+            img.src = u;
+          });
+        })).then(function () {
+          if (params.get("nojs") === "1") {
+            html = html.replace(/<script>document\.documentElement\.classList\.replace\('no-js', 'js'\);<\/script>/, "");
+          }
+          return html
+            .replace("<head>", '<head><base href="' + baseHref + '">')
+            .replace(/ loading="lazy"/g, "");
+        });
+      })
+      .then(function (html) {
+        var frame = document.createElement("iframe");
+        frame.style.width = w + "px";
+        frame.style.height = h + "px";
+        frame.addEventListener("load", function () {
+          var doc = frame.contentDocument;
+          doc.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
+          doc.documentElement.style.scrollBehavior = "auto";
+          var settled = doc.createElement("style");
+          settled.textContent = ".js .reveal{opacity:1!important;transform:none!important;transition:none!important}";
+          doc.head.appendChild(settled);
+          if (params.get("menu") === "1") {
+            var toggle = doc.querySelector("[data-nav-toggle]");
+            if (toggle) toggle.click();
+          }
+          ready(doc, function () {
+            var imgs = Array.prototype.slice.call(doc.images);
+            var offenders = [];
+            Array.prototype.forEach.call(doc.querySelectorAll("body *"), function (el) {
+              var r = el.getBoundingClientRect();
+              if (r.right > w + 1) {
+                offenders.push((el.tagName + "." + (el.className || "")).slice(0, 40) + " right=" + Math.round(r.right) + " w=" + Math.round(r.width));
+              }
+            });
+            document.getElementById("meta").textContent =
+              "HEIGHT=" + doc.documentElement.scrollHeight +
+              " SCROLLWIDTH=" + doc.documentElement.scrollWidth +
+              " OFFENDERS=" + offenders.length + " [" + offenders.slice(0, 8).join(" ;; ") + "]" +
+              " LOADED=" + imgs.filter(function (i) { return i.naturalWidth > 0; }).length + "/" + imgs.length;
+            frame.contentWindow.scrollTo(0, y);
+            setTimeout(function () { frame.contentWindow.scrollTo(0, y); }, 150);
+          });
+        });
+        frame.srcdoc = html;
+        document.body.appendChild(frame);
+      });
+  </script>
+</body>
+</html>

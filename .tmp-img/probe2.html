@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>probe2</title>
+<style>html,body{margin:0}iframe{width:1440px;height:900px;border:0;display:block}#meta{position:absolute;left:-9999px}</style>
+</head>
+<body>
+<pre id="meta">pending</pre>
+<iframe id="frame" src="../index.html"></iframe>
+<script>
+  var frame = document.getElementById("frame");
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  frame.addEventListener("load", function () {
+    var doc = frame.contentDocument;
+    var win = frame.contentWindow;
+    var out = [];
+
+    function snapshot(tag) {
+      var reveals = doc.querySelectorAll(".reveal").length;
+      var shown = doc.querySelectorAll(".reveal.is-visible").length;
+      out.push(tag + ": revealed=" + shown + "/" + reveals +
+        " headerScrolled=" + doc.querySelector("[data-header]").classList.contains("is-scrolled") +
+        " activeNav=" + (doc.querySelector(".primary-nav__list a.is-active") || {}).textContent +
+        " scrollY=" + Math.round(win.scrollY));
+    }
+
+    doc.documentElement.style.scrollBehavior = "auto";
+    snapshot("at-top");
+
+    win.scrollTo(0, 2843);
+    wait(1200).then(function () {
+      snapshot("at-projects");
+      var toggle = doc.querySelector("[data-nav-toggle]");
+      out.push("toggleDisplay=" + win.getComputedStyle(toggle).display);
+      toggle.click();
+      out.push("menuOpen=" + doc.querySelector("[data-nav]").classList.contains("is-open") +
+        " aria=" + toggle.getAttribute("aria-expanded"));
+      document.getElementById("meta").textContent = "PROBE2|" + out.join("|");
+    });
+  });
+</script>
+</body>
+</html>
